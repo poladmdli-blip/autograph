@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "vault_name": "wiki-graph",
+  "qmd_index": "wiki-graph",
+  "description": "Aviation knowledge base combining LLM wiki ingestion with team brain context",
+  "created": "2026-05-10",
+  "frontmatter_schemas": {
+    "source": ["type", "title", "source_type", "author", "date_published", "url", "confidence", "key_claims", "created", "updated", "tags", "status", "related"],
+    "entity": ["type", "title", "entity_type", "role", "first_mentioned", "created", "updated", "tags", "status", "related", "sources"],
+    "concept": ["type", "title", "complexity", "domain", "aliases", "created", "updated", "tags", "status", "related", "sources"],
+    "standard": ["type", "title", "standard_id", "icao_annex", "effective_date", "supersedes", "domain", "created", "updated", "tags", "status", "related"],
+    "decision": ["type", "title", "decision_date", "status", "decided_by", "context", "created", "updated", "tags", "related"],
+    "task": ["type", "title", "status", "priority", "assigned_to", "quarter", "created", "updated", "tags", "related"]
+  }
+}

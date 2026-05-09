@@ -1,0 +1,11 @@
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/plugins/*/data.json
+.vault-meta/.address.lock
+.vault-meta/.tiling.lock
+.vault-meta/tiling-cache.json
+.raw/.manifest.json
+*.tmp
+.DS_Store
+Thumbs.db
+node_modules/

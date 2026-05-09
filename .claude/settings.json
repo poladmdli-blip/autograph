@@ -1,0 +1,52 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '=== wiki-graph context ===' && ([ -f wiki/hot.md ] && echo '--- Hot Cache ---' && cat wiki/hot.md || echo '[hot cache empty]') && ([ -f 'brain/North Star.md' ] && echo '--- North Star ---' && cat 'brain/North Star.md' || true) && ([ -f work/Index.md ] && echo '--- Active Work ---' && head -60 work/Index.md || true)"
+          },
+          {
+            "type": "prompt",
+            "prompt": "Context loaded above: wiki/hot.md (recent wiki activity), brain/North Star.md (current goals), work/Index.md (active tasks). Absorb this context silently. Do not announce what you read. Just have the context available."
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Context does not survive compaction. Silently re-read wiki/hot.md, brain/North Star.md, and the active section of work/Index.md to restore session context. Do not announce this."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -d .git ] && git add wiki/ work/ brain/ .raw/ 2>/dev/null && (git diff --cached --quiet || git commit -m \"wiki-graph: auto-commit $(date '+%Y-%m-%d %H:%M')\" 2>/dev/null) || true"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -d wiki ] && [ -d .git ] && git diff --name-only HEAD 2>/dev/null | grep -qE '^(wiki|work|brain)/' && echo 'SESSION_WRAP: Knowledge base changed this session. Please: (1) Update wiki/hot.md with a brief summary — under 500 words, format: Last Updated / Key Recent Facts / Recent Changes / Active Threads. (2) Update brain/Key Decisions.md if any team decisions were recorded. (3) Update work/Index.md if task status changed.' || true"
+          }
+        ]
+      }
+    ]
+  }
+}
