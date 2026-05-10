@@ -41,16 +41,6 @@
         ]
       }
     ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cd \"${CLAUDE_PROJECT_DIR:-.}\" && [ -d wiki ] && [ -d .git ] && git diff --name-only HEAD 2>/dev/null | grep -qE '^(wiki|work|brain|team)/' && echo 'SESSION_WRAP: Knowledge base changed this session. Please: (1) Update wiki/hot.md — under 500 words, format: Last Updated / Key Recent Facts / Recent Changes / Active Threads. (2) Update brain/Key Decisions.md if any team decisions were recorded. (3) Update work/Index.md if task status changed. (4) git push so teammates get the latest knowledge.' || true"
-          }
-        ]
-      }
-    ]
+    "Stop": []
   }
 }

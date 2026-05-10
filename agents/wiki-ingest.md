@@ -146,7 +146,7 @@ Remove the file from `.raw/.queue` if present.
 ## Do NOT
 
 - Modify source files in `.raw/` (except `.manifest-[slug].json` sidecars and `.queue`)
-- Update `wiki/index.md`, `wiki/log.md`, or `wiki/hot.md` — the orchestrator does this
+- Update `wiki/index.md`, `wiki/log.md`, or `wiki/hot.md` — the main session does this after all agents finish, reading your sidecar
 - Create duplicate pages — always check the index first
 - Use hardcoded domain keywords — always read `domains.json`
 
