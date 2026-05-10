@@ -1,0 +1,36 @@
+{
+  "_comment": "Minimal generic config. Copy to domains.json and replace with your own domains.",
+  "version": "1.0",
+  "description": "Domain taxonomy — replace with your team's domains",
+  "domains": [
+    {
+      "id": "standards",
+      "label": "Standards & Regulations",
+      "folder": "wiki/standards",
+      "keywords": ["standard", "regulation", "specification", "requirement", "compliance"]
+    },
+    {
+      "id": "concepts",
+      "label": "Technical Concepts",
+      "folder": "wiki/concepts",
+      "keywords": ["concept", "pattern", "procedure", "process", "methodology"]
+    },
+    {
+      "id": "architecture",
+      "label": "Architecture",
+      "folder": "wiki/concepts/architecture",
+      "keywords": ["architecture", "design", "API", "database", "system", "infrastructure"]
+    }
+  ],
+  "type_folders": {
+    "standard":  "wiki/standards",
+    "concept":   "wiki/concepts",
+    "entity":    "wiki/entities",
+    "source":    "wiki/sources",
+    "decision":  "wiki/decisions",
+    "person":    "team/members",
+    "plan":      "team/plans",
+    "goal":      "team/goals",
+    "task":      "work/active"
+  }
+}

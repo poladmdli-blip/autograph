@@ -1,15 +1,29 @@
+# Knowledge content — belongs in your private knowledge repo, not here
+wiki/sources/
+wiki/entities/
+wiki/concepts/
+wiki/standards/
+wiki/decisions/
+wiki/meta/lint-report-*.md
+brain/
+team/members/
+team/plans/
+team/goals/
+work/active/
+work/archive/
+.raw/*
+!.raw/.gitkeep
+
+# User-specific domain config (copy from domains.example.json or domains.default.json)
+domains.json
+
+# Obsidian workspace state
 .obsidian/workspace.json
 .obsidian/workspace-mobile.json
 .obsidian/plugins/*/data.json
-.vault-meta/.address.lock
-.vault-meta/.tiling.lock
-.vault-meta/tiling-cache.json
-# Raw source files — too large for git, share via Drive/S3/SharePoint
-# The wiki/ summaries extracted from them ARE committed
-.raw/*
-!.raw/.manifest.json
-!.raw/.gitkeep
-*.tmp
+
+# System
 .DS_Store
 Thumbs.db
+*.tmp
 node_modules/

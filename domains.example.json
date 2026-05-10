@@ -1,0 +1,60 @@
+{
+  "_comment": "Aviation domain example. Copy to domains.json in your knowledge repo and customize.",
+  "version": "1.0",
+  "description": "Domain taxonomy for this knowledge graph. Edit to match your team's domains.",
+  "domains": [
+    {
+      "id": "icao",
+      "label": "ICAO Standards",
+      "folder": "wiki/standards/icao",
+      "keywords": ["ICAO", "Annex", "Doc 8168", "Doc 4444", "PANS", "SARPS", "International Civil Aviation Organization"]
+    },
+    {
+      "id": "aixm",
+      "label": "AIXM",
+      "folder": "wiki/standards/aixm",
+      "keywords": ["AIXM", "Aeronautical Information Exchange Model"]
+    },
+    {
+      "id": "fixm",
+      "label": "FIXM",
+      "folder": "wiki/standards/fixm",
+      "keywords": ["FIXM", "Flight Information Exchange Model"]
+    },
+    {
+      "id": "notam",
+      "label": "NOTAM",
+      "folder": "wiki/standards/notam",
+      "keywords": ["NOTAM", "Notice to Airmen", "SNOWTAM", "BIRDTAM"]
+    },
+    {
+      "id": "ff-ice",
+      "label": "FF-ICE / Flight Planning",
+      "folder": "wiki/standards/ff-ice",
+      "keywords": ["FF-ICE", "Flight and Flow Information", "SWIM", "flight planning"]
+    },
+    {
+      "id": "weather",
+      "label": "Aviation Weather",
+      "folder": "wiki/standards/weather",
+      "keywords": ["METAR", "TAF", "SIGMET", "AIRMET", "weather", "meteorolog"]
+    },
+    {
+      "id": "architecture",
+      "label": "System Architecture",
+      "folder": "wiki/concepts/architecture",
+      "keywords": ["architecture", "system design", "API", "database", "microservice"]
+    }
+  ],
+  "type_folders": {
+    "standard":  "wiki/standards",
+    "concept":   "wiki/concepts",
+    "entity":    "wiki/entities",
+    "source":    "wiki/sources",
+    "decision":  "wiki/decisions",
+    "person":    "team/members",
+    "plan":      "team/plans",
+    "goal":      "team/goals",
+    "task":      "work/active"
+  }
+}

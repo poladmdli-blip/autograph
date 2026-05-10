@@ -1,20 +1,17 @@
 ---
 description: "Hot cache — recent session context, ~500 words. Updated at session end."
-updated: 2026-05-10
+updated: YYYY-MM-DD
 ---
 
 # Hot Cache
 
-**Last Updated**: 2026-05-10
+**Last Updated**: —
 
 ## Key Recent Facts
-
-_Nothing ingested yet. Drop files into `.raw/` and say "ingest all" to start._
+_Nothing ingested yet._
 
 ## Recent Changes
-
-- Vault created (2026-05-10)
+- Vault initialized
 
 ## Active Threads
-
 _None yet._
