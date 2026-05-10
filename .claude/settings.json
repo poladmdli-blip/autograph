@@ -6,11 +6,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '=== wiki-graph context ===' && ([ -f wiki/hot.md ] && echo '--- Hot Cache ---' && cat wiki/hot.md || echo '[hot cache empty]') && ([ -f 'brain/North Star.md' ] && echo '--- North Star ---' && cat 'brain/North Star.md' || true) && ([ -f work/Index.md ] && echo '--- Active Work ---' && head -60 work/Index.md || true)"
+            "command": "cd \"${CLAUDE_PROJECT_DIR:-.}\" && git pull --quiet 2>/dev/null || true"
+          },
+          {
+            "type": "command",
+            "command": "cd \"${CLAUDE_PROJECT_DIR:-.}\" && ([ -f wiki/hot.md ] && echo '--- Hot Cache ---' && cat wiki/hot.md || echo '[hot cache empty]') && ([ -f 'brain/North Star.md' ] && echo '--- North Star ---' && cat 'brain/North Star.md' || true) && ([ -f work/Index.md ] && echo '--- Active Work ---' && head -60 work/Index.md || true)"
+          },
+          {
+            "type": "command",
+            "command": "cd \"${CLAUDE_PROJECT_DIR:-.}\" && node bin/check-new-files.mjs 2>/dev/null || echo 'RAW_DIR_CLEAN'"
           },
           {
             "type": "prompt",
-            "prompt": "Context loaded above: wiki/hot.md (recent wiki activity), brain/North Star.md (current goals), work/Index.md (active tasks). Absorb this context silently. Do not announce what you read. Just have the context available."
+            "prompt": "You are starting a wiki-graph session. Two tasks:\n\n1. CONTEXT: Absorb the Hot Cache, North Star, and Active Work shown above. Do not announce this.\n\n2. AUTO-INGEST: If lines starting with 'INGEST:' appeared above, immediately ingest every listed file without asking the user. For each file: read its content, determine its domain and type from the content itself (do NOT use predefined folders — create subfolders that match the content), create wiki pages, cross-reference, update wiki/index.md and wiki/log.md. When all files are done, update wiki/hot.md and report a summary to the user."
           }
         ]
       }
@@ -21,7 +29,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Context does not survive compaction. Silently re-read wiki/hot.md, brain/North Star.md, and the active section of work/Index.md to restore session context. Do not announce this."
+            "prompt": "Context was lost to compaction. Silently re-read wiki/hot.md, brain/North Star.md, and the active section of work/Index.md to restore context. Do not announce this."
           }
         ]
       }
@@ -32,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -d .git ] && git add wiki/ work/ brain/ .raw/ 2>/dev/null && (git diff --cached --quiet || git commit -m \"wiki-graph: auto-commit $(date '+%Y-%m-%d %H:%M')\" 2>/dev/null) || true"
+            "command": "cd \"${CLAUDE_PROJECT_DIR:-.}\" && [ -d .git ] && git add wiki/ work/ brain/ team/ .raw/.manifest.json 2>/dev/null && (git diff --cached --quiet || git commit -m \"wiki-graph: auto-commit $(date '+%Y-%m-%d %H:%M')\" 2>/dev/null) || true"
           }
         ]
       }
@@ -43,7 +51,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -d wiki ] && [ -d .git ] && git diff --name-only HEAD 2>/dev/null | grep -qE '^(wiki|work|brain)/' && echo 'SESSION_WRAP: Knowledge base changed this session. Please: (1) Update wiki/hot.md with a brief summary — under 500 words, format: Last Updated / Key Recent Facts / Recent Changes / Active Threads. (2) Update brain/Key Decisions.md if any team decisions were recorded. (3) Update work/Index.md if task status changed.' || true"
+            "command": "cd \"${CLAUDE_PROJECT_DIR:-.}\" && [ -d wiki ] && [ -d .git ] && git diff --name-only HEAD 2>/dev/null | grep -qE '^(wiki|work|brain|team)/' && echo 'SESSION_WRAP: Knowledge base changed this session. Please: (1) Update wiki/hot.md — under 500 words, format: Last Updated / Key Recent Facts / Recent Changes / Active Threads. (2) Update brain/Key Decisions.md if any team decisions were recorded. (3) Update work/Index.md if task status changed. (4) git push so teammates get the latest knowledge.' || true"
           }
         ]
       }
