@@ -15,10 +15,6 @@
           {
             "type": "command",
             "command": "cd \"${CLAUDE_PROJECT_DIR:-.}\" && node bin/check-new-files.mjs 2>/dev/null || echo 'RAW_DIR_CLEAN'"
-          },
-          {
-            "type": "prompt",
-            "prompt": "You are starting a wiki-graph session. Two tasks:\n\n1. CONTEXT: Absorb the Hot Cache, North Star, and Active Work shown above. Do not announce this.\n\n2. AUTO-INGEST: If lines starting with 'INGEST:' appeared above, immediately ingest every listed file without asking the user. For each file: read its content, determine its domain and type from the content itself (do NOT use predefined folders — create subfolders that match the content), create wiki pages, cross-reference, update wiki/index.md and wiki/log.md. When all files are done, update wiki/hot.md and report a summary to the user."
           }
         ]
       }

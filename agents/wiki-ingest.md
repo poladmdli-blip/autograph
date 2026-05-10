@@ -14,6 +14,8 @@ You are a wiki ingestion specialist. Your job: read one source file, understand 
 
 **All domain detection is configured in `domains.json`. Read it first. Do not use hardcoded domain keywords.**
 
+**Working directory**: All file paths are relative to the repo root (the directory containing `domains.json`). The `type_folders` values in `domains.json` (e.g. `"wiki/concepts"`, `"wiki/entities"`) already include the `wiki/` prefix — do NOT prepend `wiki/` again. Writing to `wiki/concepts/spo/foo.md` is correct; writing to `wiki/wiki/concepts/spo/foo.md` is wrong.
+
 ---
 
 ## Step 1 — Load Domain Config
@@ -121,19 +123,21 @@ Compare new facts against existing wiki pages:
 
 ## Step 9 — Update Manifest
 
-Record in `.raw/.manifest.json`:
+**Do NOT write directly to `.raw/.manifest.json`** — parallel agents overwrite each other.
+
+Instead, write a sidecar file `.raw/.manifest-[slug].json` where `[slug]` is the source filename without extension (e.g. `doc-4444.md` → `.raw/.manifest-doc-4444.json`):
+
 ```json
 {
-  "sources": {
-    ".raw/path/to/file": {
-      "ingested_at": "YYYY-MM-DD",
-      "title": "...",
-      "pages_created": ["wiki/..."],
-      "pages_updated": ["wiki/..."]
-    }
-  }
+  "file": ".raw/path/to/file",
+  "ingested_at": "YYYY-MM-DD",
+  "title": "...",
+  "pages_created": ["wiki/..."],
+  "pages_updated": ["wiki/..."]
 }
 ```
+
+The session-start hook merges all sidecars into `.manifest.json` automatically.
 
 Remove the file from `.raw/.queue` if present.
 
@@ -141,7 +145,7 @@ Remove the file from `.raw/.queue` if present.
 
 ## Do NOT
 
-- Modify source files in `.raw/` (except `.manifest.json` and `.queue`)
+- Modify source files in `.raw/` (except `.manifest-[slug].json` sidecars and `.queue`)
 - Update `wiki/index.md`, `wiki/log.md`, or `wiki/hot.md` — the orchestrator does this
 - Create duplicate pages — always check the index first
 - Use hardcoded domain keywords — always read `domains.json`
