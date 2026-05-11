@@ -1,0 +1,8 @@
+{
+  "name": "autograph",
+  "description": "Personal knowledge graph — ingest documents, query wiki, manage notes. Drop files into your raw folder; Claude ingests, structures, and cross-references them automatically across every project.",
+  "version": "1.0.0",
+  "author": {
+    "name": "wiki-graph"
+  }
+}

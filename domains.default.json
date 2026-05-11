@@ -28,9 +28,9 @@
     "entity":    "wiki/entities",
     "source":    "wiki/sources",
     "decision":  "wiki/decisions",
-    "person":    "team/members",
-    "plan":      "team/plans",
-    "goal":      "team/goals",
+    "person":    "wiki/entities/people",
+    "plan":      "work/active",
+    "goal":      "wiki/meta",
     "task":      "work/active"
   }
 }

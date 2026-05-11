@@ -1,0 +1,346 @@
+#!/usr/bin/env node
+/**
+ * autograph-setup — configure autograph with your local paths and wire it
+ * into ~/.claude/CLAUDE.md and ~/.claude/settings.json.
+ *
+ * Installed as a plugin: run `autograph-setup` from any terminal.
+ * Cloned locally:        run `node bin/autograph-setup` or `node bin/setup.js`.
+ */
+import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from 'fs';
+import { join, resolve, dirname, sep } from 'path';
+import { homedir } from 'os';
+import { createInterface } from 'readline';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const TOOL_DIR = resolve(__dirname, '..');
+
+function expandHome(p) {
+  return p.startsWith('~') ? join(homedir(), p.slice(1)) : resolve(p);
+}
+
+function ensureDir(p) {
+  if (!existsSync(p)) mkdirSync(p, { recursive: true });
+}
+
+const rl = createInterface({ input: process.stdin, output: process.stdout });
+const ask = (question, def) => new Promise(res => {
+  rl.question(def ? `${question} [${def}]: ` : `${question}: `, ans => res(ans.trim() || def || ''));
+});
+
+console.log('\nautograph setup\n');
+
+const defaultWiki = join(homedir(), 'knowledge');
+const defaultRaw  = join(defaultWiki, '.raw');
+
+const wikiInput = await ask('Wiki output path (where pages will be created)', defaultWiki);
+const rawInput  = await ask('Raw files path (where you drop source documents)', defaultRaw);
+rl.close();
+
+const wikiPath = expandHome(wikiInput);
+const rawPath  = expandHome(rawInput);
+
+// ── 1. Create directory structure ────────────────────────────────────────────
+console.log('\nEnsuring directory structure...');
+for (const dir of [
+  join(wikiPath, 'wiki', 'sources'),
+  join(wikiPath, 'wiki', 'entities'),
+  join(wikiPath, 'wiki', 'entities', 'people'),
+  join(wikiPath, 'wiki', 'concepts'),
+  join(wikiPath, 'wiki', 'standards'),
+  join(wikiPath, 'wiki', 'decisions'),
+  join(wikiPath, 'wiki', 'meta'),
+  join(wikiPath, 'brain'),
+  join(wikiPath, 'work', 'active'),
+  join(wikiPath, 'work', 'archive'),
+  rawPath,
+]) {
+  if (existsSync(dir)) {
+    console.log(`  skip   ${dir}`);
+  } else {
+    mkdirSync(dir, { recursive: true });
+    console.log(`  create ${dir}`);
+  }
+}
+
+// ── 2. Copy domains config ───────────────────────────────────────────────────
+const domainsTarget = join(wikiPath, 'domains.json');
+if (!existsSync(domainsTarget)) {
+  copyFileSync(join(TOOL_DIR, 'domains.default.json'), domainsTarget);
+  console.log('Copied domains.default.json → domains.json (edit to match your domain)');
+} else {
+  console.log('domains.json already exists — skipping');
+}
+
+// ── 3. Copy wiki template files ──────────────────────────────────────────────
+for (const f of ['index.md', 'hot.md', 'log.md', 'overview.md']) {
+  const src = join(TOOL_DIR, 'wiki', f);
+  const dst = join(wikiPath, 'wiki', f);
+  if (existsSync(src) && !existsSync(dst)) copyFileSync(src, dst);
+}
+for (const d of ['sources', 'entities', 'concepts', 'standards', 'decisions', 'meta']) {
+  const src = join(TOOL_DIR, 'wiki', d, '_index.md');
+  const dst = join(wikiPath, 'wiki', d, '_index.md');
+  if (existsSync(src) && !existsSync(dst)) copyFileSync(src, dst);
+}
+for (const f of ['North Star.md', 'Key Decisions.md', 'Patterns.md', 'Gotchas.md', 'Memories.md']) {
+  const src = join(TOOL_DIR, 'brain', f);
+  const dst = join(wikiPath, 'brain', f);
+  if (existsSync(src) && !existsSync(dst)) copyFileSync(src, dst);
+}
+for (const f of ['Index.md']) {
+  const src = join(TOOL_DIR, 'work', f);
+  const dst = join(wikiPath, 'work', f);
+  if (existsSync(src) && !existsSync(dst)) copyFileSync(src, dst);
+}
+
+// Bootstrap manifest and gitkeep
+const manifestPath = join(rawPath, '.manifest.json');
+if (!existsSync(manifestPath)) writeFileSync(manifestPath, JSON.stringify({ sources: {} }, null, 2));
+const gitkeepPath = join(rawPath, '.gitkeep');
+if (!existsSync(gitkeepPath)) writeFileSync(gitkeepPath, '');
+
+// ── 4. Write autograph.config.json ──────────────────────────────────────────
+const configPath = join(TOOL_DIR, 'autograph.config.json');
+writeFileSync(configPath, JSON.stringify({ raw_path: rawPath, wiki_path: wikiPath }, null, 2) + '\n');
+console.log('Wrote autograph.config.json');
+
+// ── 5. Patch ~/.claude/CLAUDE.md ─────────────────────────────────────────────
+const claudeDir = join(homedir(), '.claude');
+const claudeMdPath = join(claudeDir, 'CLAUDE.md');
+ensureDir(claudeDir);
+
+const SENTINEL_BEGIN = '<!-- autograph:begin -->';
+const SENTINEL_END   = '<!-- autograph:end -->';
+const wikiBlock = buildWikiBlock(rawPath, wikiPath);
+
+if (existsSync(claudeMdPath)) {
+  let content = readFileSync(claudeMdPath, 'utf8');
+  if (content.includes(SENTINEL_BEGIN)) {
+    const before = content.slice(0, content.indexOf(SENTINEL_BEGIN));
+    const after  = content.slice(content.indexOf(SENTINEL_END) + SENTINEL_END.length);
+    content = before + wikiBlock + after;
+    console.log('Updated existing autograph block in ~/.claude/CLAUDE.md');
+  } else {
+    content = content.trimEnd() + '\n\n' + wikiBlock + '\n';
+    console.log('Appended wiki lookup protocol to ~/.claude/CLAUDE.md');
+  }
+  writeFileSync(claudeMdPath, content);
+} else {
+  writeFileSync(claudeMdPath, wikiBlock + '\n');
+  console.log('Created ~/.claude/CLAUDE.md with wiki lookup protocol');
+}
+
+// ── 5. Write ~/.claude/commands/wiki-search.md (path-aware, generated) ───────
+const commandsDir = join(claudeDir, 'commands');
+ensureDir(commandsDir);
+const wikiSearchPath = join(commandsDir, 'wiki-search.md');
+writeFileSync(wikiSearchPath, buildWikiSearchCommand(wikiPath));
+console.log('Wrote ~/.claude/commands/wiki-search.md');
+console.log('Note: all other commands (save, dump, wrap, autoresearch) are delivered via the autograph plugin.');
+
+// ── 6. Patch ~/.claude/settings.json with global hooks ───────────────────────
+const globalSettingsPath = join(claudeDir, 'settings.json');
+patchGlobalHooks(globalSettingsPath, TOOL_DIR, wikiPath, rawPath);
+
+// ── Done ─────────────────────────────────────────────────────────────────────
+console.log(`
+Setup complete!
+
+  Wiki path: ${wikiPath}
+  Raw path:  ${rawPath}
+
+Next steps:
+  1. Edit ${domainsTarget}
+     to add your domain keywords (controls how documents are classified)
+  2. Drop a file into ${rawPath} to test ingest
+  3. Start Claude Code in any project — it will check your wiki automatically
+`);
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function patchGlobalHooks(settingsPath, toolDir, wikiPath, rawPath) {
+  const t = toolDir.replaceAll('\\', '/');
+
+  const autographHooks = {
+    SessionStart: {
+      _autograph: true,
+      hooks: [
+        {
+          type: 'command',
+          command: `node "${t}/bin/session-start.mjs"`,
+        },
+        {
+          type: 'command',
+          command: `node "${t}/bin/check-new-files.mjs"`,
+        },
+      ],
+    },
+    PostCompact: {
+      _autograph: true,
+      hooks: [
+        {
+          type: 'command',
+          command: `node "${t}/bin/post-compact.mjs"`,
+        },
+      ],
+    },
+    PostToolUse: {
+      _autograph: true,
+      matcher: 'Write|Edit',
+      hooks: [
+        {
+          type: 'command',
+          command: `node "${t}/bin/post-write.mjs"`,
+        },
+      ],
+    },
+    Stop: {
+      _autograph: true,
+      hooks: [
+        {
+          type: 'command',
+          command: `node "${t}/bin/update-hot-cache.mjs"`,
+        },
+      ],
+    },
+  };
+
+  const settings = existsSync(settingsPath)
+    ? JSON.parse(readFileSync(settingsPath, 'utf8'))
+    : {};
+
+  if (!settings.hooks) settings.hooks = {};
+
+  let added = 0;
+  let updated = 0;
+
+  for (const [event, group] of Object.entries(autographHooks)) {
+    if (!settings.hooks[event]) settings.hooks[event] = [];
+    const existing = settings.hooks[event];
+    const idx = existing.findIndex(g => g._autograph === true);
+    if (idx >= 0) {
+      existing[idx] = group;
+      updated++;
+    } else {
+      existing.push(group);
+      added++;
+    }
+  }
+
+  writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+  console.log(`Patched ~/.claude/settings.json — ${added} hook group(s) added, ${updated} updated`);
+}
+
+function buildWikiBlock(rawPath, wikiPath) {
+  const w = wikiPath.replaceAll('\\', '/');
+  const r = rawPath.replaceAll('\\', '/');
+  const isWindows = sep === '\\';
+  const grepNote = isWindows
+    ? '\n**Note for Windows users**: Do NOT use the Grep tool — it returns empty results on Windows. Always use `Bash grep -r` for full-text search.\n'
+    : '';
+
+  return `${SENTINEL_BEGIN}
+## Knowledge Graph
+
+My personal knowledge base lives at:
+
+\`\`\`
+${w}
+\`\`\`
+
+When the user references the wiki, knowledge base, vault, or asks to save/ingest something, open or operate within that directory.
+
+**Wiki lookup protocol** — apply silently before answering any question that touches people, systems, projects, workflows, standards, domain concepts, or implementation decisions.
+
+### Step 1 — Read the index
+Read \`${w}/wiki/index.md\`. Scan section headers and page titles for anything related to the user's request. Note the relative paths of candidate pages.
+
+### Step 2 — Check decisions first (BLOCKING)
+Read \`${w}/wiki/decisions/_index.md\`.
+If the request involves implementing, building, adding, or changing something, also run:
+\`\`\`
+grep -ri "<keywords>" "${w}/wiki/decisions" --include="*.md" -l
+\`\`\`
+Read every matched decision file. If a decision blocks or contradicts what the user is asking, surface it as a warning BEFORE responding:
+> "⚠️ Wiki decision: **[Title]** (status: rejected) — [summary]. Do you want to proceed anyway?"
+
+### Step 3 — Read relevant pages
+From the candidates identified in Step 1, read the most relevant pages (up to 4). Prefer \`concepts/\` and \`entities/\` pages that directly match the topic.
+${grepNote}
+## Auto-ingest
+
+If the session-start system-reminder contains \`NEW_FILES_DETECTED\`, call the \`AskUserQuestion\` tool with a single question listing the pending files and offering these options:
+- **Ingest now** — proceed with ingestion immediately
+- **Skip this session** — do nothing, ingest next time
+- **Show me the file(s) first** — read and display the raw content before deciding
+
+Never ingest without the user selecting "Ingest now". If they choose "Show me the file(s) first", display the content then call \`AskUserQuestion\` again with just "Ingest now" and "Skip this session".
+
+Once confirmed:
+- \`.pdf\` files → follow \`${w}/commands/ingest-pdf.md\` (chunked 20-page read loop)
+- All other files → spawn one \`autograph:wiki-ingest\` agent per file (run in parallel), passing this context in each agent's prompt:
+  \`\`\`
+  wiki_path: ${w}
+  raw_path: ${r}
+  source_file: [full path to the file]
+  \`\`\`
+
+After all agents finish:
+1. Read all \`.manifest-*.json\` sidecars from \`${r}\`
+2. Update \`${w}/wiki/index.md\` — append new entries under the correct type/domain section, alphabetically. Update the Stats line.
+3. Update \`${w}/wiki/log.md\` — prepend a new entry (newest-first):
+   \`\`\`
+   ## YYYY-MM-DD — Ingest: <filename>
+   **Type**: ingest  **Source**: ${r}/<filename>  **Pages created**: N
+   - list of pages
+   **Pages updated**: list or "none"
+   \`\`\`
+${SENTINEL_END}`;
+}
+
+function buildWikiSearchCommand(wikiPath) {
+  const w = wikiPath.replaceAll('\\', '/');
+  return `---
+description: Search the personal wiki knowledge graph. Usage: /wiki-search <query>
+---
+
+Search the wiki for: $ARGUMENTS
+
+1. Read \`${w}/wiki/index.md\`. Scan all titles and section headers for matches.
+   Collect candidate page paths grouped by section.
+
+2. Check decisions first:
+   grep -ri "$ARGUMENTS" "${w}/wiki/decisions" --include="*.md" -l
+   Read every matched decision file. Note status: (approved / rejected / superseded).
+
+3. Read the top matching pages (up to 5, decisions always included). If the index scan
+   found fewer than 3 matches, also run:
+   grep -ri "$ARGUMENTS" "${w}/wiki" --include="*.md" -l
+   Exclude index.md, log.md, hot.md, _index.md from results.
+
+4. Report:
+
+---
+**Wiki results for "$ARGUMENTS"**
+
+### Decisions
+- **[Title](path)** — \`status: rejected\` — One-line summary.
+
+### Concepts
+- **[Title](path)** — One-line summary.
+
+### Entities / Systems / People
+- **[Title](path)** — One-line summary.
+
+### Sources
+- **[Title](path)** — One-line summary.
+
+*(N pages matched)*
+---
+
+If nothing matches: "No wiki pages found for '$ARGUMENTS'. Consider ingesting a source or creating a decision page."
+
+Do NOT use the Grep tool on Windows — use Bash grep -r.
+`;
+}

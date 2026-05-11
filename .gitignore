@@ -14,6 +14,9 @@ work/archive/
 .raw/*
 !.raw/.gitkeep
 
+# User-specific plugin config (created by bin/setup.js)
+autograph.config.json
+
 # User-specific domain config (copy from domains.example.json or domains.default.json)
 domains.json
 

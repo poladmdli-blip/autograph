@@ -11,9 +11,18 @@ Usage:
 - `/save concept [name]` — explicitly save as a concept page in `wiki/concepts/`
 - `/save standard [name]` — explicitly save as a standard page in `wiki/standards/`
 - `/save task [name]` — save as a task in `work/active/`
+- `/save person [name]` — explicitly save as a team member profile in `team/members/`
+
+Type routing rules (applied in Step 1):
+- People, team members, colleagues → `wiki/entities/people/[name].md`
+- Decisions, choices, "we decided" → `wiki/decisions/`
+- Tasks, action items, "we need to" → `work/active/`
+- Concepts, technical knowledge → `wiki/concepts/`
+- Standards, regulations → `wiki/standards/`
+- Everything else → `wiki/sources/`
 
 Steps:
-1. Determine the best note type and location based on content.
+1. Determine the best note type and location using the routing rules above.
 2. Check if a page with the same name already exists. If yes, offer to update instead.
 3. Create the note with proper frontmatter from `vault-manifest.json` schemas.
 4. Add wikilinks to at least one existing wiki page.

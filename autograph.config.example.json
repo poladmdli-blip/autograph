@@ -1,0 +1,5 @@
+{
+  "_comment": "Copy to autograph.config.json and fill in your paths. This file is committed; autograph.config.json is gitignored.",
+  "raw_path": "/Users/you/knowledge/.raw",
+  "wiki_path": "/Users/you/knowledge"
+}

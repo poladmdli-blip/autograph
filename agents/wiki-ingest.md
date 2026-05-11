@@ -14,13 +14,23 @@ You are a wiki ingestion specialist. Your job: read one source file, understand 
 
 **All domain detection is configured in `domains.json`. Read it first. Do not use hardcoded domain keywords.**
 
-**Working directory**: All file paths are relative to the repo root (the directory containing `domains.json`). The `type_folders` values in `domains.json` (e.g. `"wiki/concepts"`, `"wiki/entities"`) already include the `wiki/` prefix — do NOT prepend `wiki/` again. Writing to `wiki/concepts/spo/foo.md` is correct; writing to `wiki/wiki/concepts/spo/foo.md` is wrong.
+---
+
+## Step 0 — Resolve Paths
+
+Your invocation prompt contains `wiki_path` and `raw_path`. Read them from there — do not look for `autograph.config.json`.
+
+- `wiki_path` = base directory for all wiki writes (e.g. `/Users/you/knowledge`)
+- `raw_path`  = directory where source files live (e.g. `/Users/you/knowledge/.raw`)
+- `domains.json` lives at `{wiki_path}/domains.json`
+- All `type_folders` values are resolved as `{wiki_path}/{type_folder}`
+- Sidecar manifests are written to `{raw_path}/.manifest-[slug].json`
 
 ---
 
 ## Step 1 — Load Domain Config
 
-Read `domains.json`. This file defines:
+Read `{wiki_path}/domains.json` (or `domains.json` in CWD if no config). This file defines:
 - `domains[]` — list of domains with `id`, `label`, `folder`, and `keywords[]`
 - `type_folders` — where each note type lives (standard, concept, entity, decision, person, plan, task)
 
@@ -45,7 +55,7 @@ Scan the document for keywords from each domain in `domains.json`. Match the dom
 
 Example: document has keywords matching domain `icao` → type `standard` → folder `wiki/standards/icao/`
 Example: document has keywords matching domain `architecture` → type `concept` → folder `wiki/concepts/architecture/`
-Example: document is about a person → type `person` → folder `team/members/` (from `type_folders.person`)
+Example: document is about a person → type `person` → folder `wiki/entities/people/` (from `type_folders.person`)
 
 If no domain matches, infer one from the content and create an appropriate subfolder.
 
@@ -54,7 +64,7 @@ If no domain matches, infer one from the content and create an appropriate subfo
 ## Step 3 — Check for Duplicates
 
 Before creating anything:
-1. Read `wiki/index.md` to check if a page for this source already exists
+1. Read `{wiki_path}/wiki/index.md` to check if a page for this source already exists
 2. Grep for the document title or standard ID
 3. If exists and file hash unchanged, skip and report "Already ingested"
 
@@ -105,6 +115,7 @@ For each significant technical concept, procedure, or idea:
 
 Every folder that receives a new page needs an `_index.md` listing its contents.
 Create one if missing. Append the new page if it exists.
+All paths are absolute, rooted at `wiki_path`.
 
 ---
 
@@ -123,19 +134,21 @@ Compare new facts against existing wiki pages:
 
 ## Step 9 — Update Manifest
 
-**Do NOT write directly to `.raw/.manifest.json`** — parallel agents overwrite each other.
+**Do NOT write directly to `{raw_path}/.manifest.json`** — parallel agents overwrite each other.
 
-Instead, write a sidecar file `.raw/.manifest-[slug].json` where `[slug]` is the source filename without extension (e.g. `doc-4444.md` → `.raw/.manifest-doc-4444.json`):
+Instead, write a sidecar file `{raw_path}/.manifest-[slug].json` where `[slug]` is the source filename without extension (e.g. `doc-4444.md` → `{raw_path}/.manifest-doc-4444.json`):
 
 ```json
 {
-  "file": ".raw/path/to/file",
+  "file": "/absolute/path/to/raw/file",
   "ingested_at": "YYYY-MM-DD",
   "title": "...",
   "pages_created": ["wiki/..."],
   "pages_updated": ["wiki/..."]
 }
 ```
+
+`"file"` must be the **full absolute path** to the source file (same value as `source_file` from your invocation prompt). The hook resolves it to match the path that `scan()` produces, so a relative path will also work — but absolute is preferred.
 
 The session-start hook merges all sidecars into `.manifest.json` automatically.
 
@@ -145,8 +158,9 @@ Remove the file from `.raw/.queue` if present.
 
 ## Do NOT
 
-- Modify source files in `.raw/` (except `.manifest-[slug].json` sidecars and `.queue`)
+- Modify source files in `raw_path` (except `.manifest-[slug].json` sidecars and `.queue`)
 - Update `wiki/index.md`, `wiki/log.md`, or `wiki/hot.md` — the main session does this after all agents finish, reading your sidecar
+- Delete your own sidecar — the main session leaves it in place; the session-start hook merges it into `.manifest.json` and deletes it on next launch
 - Create duplicate pages — always check the index first
 - Use hardcoded domain keywords — always read `domains.json`
 
